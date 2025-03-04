@@ -169,22 +169,46 @@ const TaskManager: React.FC = () => {
   );
 };
 
-// Task Item Component
 const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete }) => {
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+
   return (
-    <li className="bg-white/50 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-white/50 flex justify-between items-center group hover:bg-white/70 transition-all duration-300">
-      <Ellipsis className={"text-gray-800 font-medium"}>{task.name}</Ellipsis>
-      <button
-        onClick={() => onDelete(task.id)}
-        className="text-gray-400 hover:text-red-500 transition-colors duration-300"
-        aria-label="Delete task"
-      >
-        <img
-          src="https://unpkg.com/lucide-static@latest/icons/trash-2.svg"
-          alt="Delete"
-          className="min-w-5 min-h-5 size-5"
-        />
-      </button>
+    <li
+      className={`relative backdrop-blur-sm rounded-xl p-4 shadow-sm border transition-all duration-300 
+        ${
+          isHovered
+            ? "bg-gradient-to-r from-indigo-50/90 to-purple-50/90 border-indigo-200/50 shadow-md scale-[1.01] z-10"
+            : "bg-white/50 border-white/50"
+        }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex justify-between items-center">
+        <Ellipsis
+          className={`font-medium transition-colors ${
+            isHovered ? "text-indigo-700" : "text-gray-800"
+          }`}
+        >
+          {task.name}
+        </Ellipsis>
+        <button
+          onClick={() => onDelete(task.id)}
+          className={`transition-colors duration-300 ${
+            isHovered ? "text-red-500" : "text-gray-400 hover:text-red-500"
+          }`}
+          aria-label="Delete task"
+        >
+          <img
+            src="https://unpkg.com/lucide-static@latest/icons/trash-2.svg"
+            alt="Delete"
+            className="min-w-5 min-h-5 size-5"
+          />
+        </button>
+      </div>
+
+      {isHovered && (
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-200/10 to-purple-200/10 rounded-xl pointer-events-none"></div>
+      )}
     </li>
   );
 };
