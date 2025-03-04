@@ -1,13 +1,9 @@
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Ellipsis from "./Ellipsis";
 import delay from "delay";
+import { Task, useTaskStore } from "../store/taskStore";
+import { useEffect, useState } from "react";
 // Task interface
-interface Task {
-  id: string;
-  name: string;
-  createdAt: Date;
-}
 
 interface TaskItemProps {
   task: Task;
@@ -22,78 +18,68 @@ interface NewTaskModalProps {
 
 // Main TaskManager Component
 const TaskManager: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  const { isLoading, tasks, searchTerm, addTask, deleteTask, setSearchTerm } =
+    useTaskStore((state) => ({
+      isLoading: state.isLoading,
+      searchTerm: state.searchTerm,
+      addTask: state.addTask,
+      deleteTask: state.deleteTask,
+      setSearchTerm: state.setSearchTerm,
+      tasks: state.tasks,
+    }));
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) =>
+      task.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [tasks, searchTerm]);
+
+  useEffect(() => {
+    console.log(filteredTasks);
+  }, [filteredTasks]);
 
   // Simulate API fetch on component mount
   useEffect(() => {
-    const fetchTasks = async () => {
-      setIsLoading(true);
-      // Simulate API delay
-      await delay(1500);
-
-      // Mock initial data
-      const initialTasks: Task[] = [
-        {
-          id: "1",
-          name: "A Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Task",
-          createdAt: new Date(),
-        },
-        { id: "2", name: "Review code changes", createdAt: new Date() },
-        { id: "3", name: "Update documentation", createdAt: new Date() },
-      ];
-
-      setTasks(initialTasks);
-      setFilteredTasks(initialTasks);
-      setIsLoading(false);
+    const initializeStore = async () => {
+      try {
+        useTaskStore.setState({ isLoading: true });
+        await delay(1500);
+        useTaskStore.setState((state) => ({
+          tasks:
+            state.tasks.length === 0
+              ? [
+                  {
+                    id: "1",
+                    name: "A Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Long Task",
+                    createdAt: new Date(),
+                  },
+                  {
+                    id: "2",
+                    name: "Review code changes",
+                    createdAt: new Date(),
+                  },
+                  {
+                    id: "3",
+                    name: "Update documentation",
+                    createdAt: new Date(),
+                  },
+                ]
+              : state.tasks,
+          isLoading: false,
+        }));
+      } catch (error) {
+        useTaskStore.setState({ isLoading: false });
+      }
     };
-
-    fetchTasks();
+    initializeStore();
   }, []);
 
-  // Filter tasks based on search term
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredTasks(tasks);
-    } else {
-      const filtered = tasks.filter((task) =>
-        task.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredTasks(filtered);
-    }
-  }, [searchTerm, tasks]);
-
   // Handle task creation
-  const handleCreateTask = async (taskName: string) => {
-    setIsModalOpen(false);
-
-    // Simulate API call
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const newTask: Task = {
-      id: Date.now().toString(),
-      name: taskName,
-      createdAt: new Date(),
-    };
-
-    setTasks((prevTasks) => [...prevTasks, newTask]);
-    setIsLoading(false);
+  const handleCreateTask = (taskName: string) => {
+    addTask({ name: taskName, createdAt: new Date() });
     toast.success("Task created successfully!");
-  };
-
-  // Handle task deletion
-  const handleDeleteTask = async (id: string) => {
-    // Simulate API call
-    setIsLoading(true);
-    await delay(600);
-
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-    setIsLoading(false);
-    toast.success("Task deleted successfully!");
   };
 
   return (
@@ -144,11 +130,7 @@ const TaskManager: React.FC = () => {
           ) : filteredTasks.length > 0 ? (
             <ul className="space-y-3 relative z-10">
               {filteredTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onDelete={handleDeleteTask}
-                />
+                <TaskItem key={task.id} task={task} onDelete={deleteTask} />
               ))}
             </ul>
           ) : (
@@ -172,6 +154,10 @@ const TaskManager: React.FC = () => {
 const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
 
+  const handleDelete = () => {
+    onDelete(task.id);
+    toast.success("Task deleted successfully!");
+  };
   return (
     <li
       className={`relative backdrop-blur-sm rounded-xl p-4 shadow-sm border transition-all duration-300 
@@ -192,7 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete }) => {
           {task.name}
         </Ellipsis>
         <button
-          onClick={() => onDelete(task.id)}
+          onClick={handleDelete}
           className={`transition-colors duration-300 ${
             isHovered ? "text-red-500" : "text-gray-400 hover:text-red-500"
           }`}
@@ -226,6 +212,7 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
     if (taskName.trim()) {
       onSubmit(taskName);
       setTaskName("");
+      onClose();
     }
   };
 
@@ -289,7 +276,7 @@ const NewTaskModal: React.FC<NewTaskModalProps> = ({
 const SkeletonLoader: React.FC = () => {
   return (
     <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
+      {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
           className="animate-pulse bg-white/30 rounded-xl p-4 flex justify-between"
