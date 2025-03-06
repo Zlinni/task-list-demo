@@ -3,6 +3,7 @@ import Ellipsis from "./Ellipsis";
 import delay from "delay";
 import { Task, useTaskStore } from "../store/taskStore";
 import { useEffect, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
 // Task interface
 
 interface TaskItemProps {
@@ -35,6 +36,8 @@ const TaskManager: React.FC = () => {
       task.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [tasks, searchTerm]);
+
+  const debouncedSearchTerm = useDebouncedCallback(setSearchTerm, 100);
 
   useEffect(() => {
     console.log(filteredTasks);
@@ -120,7 +123,7 @@ const TaskManager: React.FC = () => {
               className="block w-full pl-10 pr-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all duration-300"
               placeholder="Search tasks..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => debouncedSearchTerm(e.target.value)}
             />
           </div>
 
@@ -151,9 +154,8 @@ const TaskManager: React.FC = () => {
   );
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete }) => {
+const TaskItem: React.FC<TaskItemProps> = memo(({ task, onDelete }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
-
   const handleDelete = () => {
     onDelete(task.id);
     toast.success("Task deleted successfully!");
@@ -197,7 +199,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete }) => {
       )}
     </li>
   );
-};
+});
 
 // New Task Modal Component
 const NewTaskModal: React.FC<NewTaskModalProps> = ({

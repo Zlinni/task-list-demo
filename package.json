@@ -17,6 +17,7 @@
     "react-dom": "^19.0.0",
     "react-toastify": "^11.0.5",
     "tailwind-merge": "^3.0.2",
+    "use-debounce": "^10.0.4",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
