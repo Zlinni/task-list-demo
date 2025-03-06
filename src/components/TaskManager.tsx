@@ -2,8 +2,7 @@ import { toast } from "react-toastify";
 import Ellipsis from "./Ellipsis";
 import delay from "delay";
 import { Task, useTaskStore } from "../store/taskStore";
-import { useEffect, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
+import { useEffect, useState, useMemo } from "react";
 // Task interface
 
 interface TaskItemProps {
@@ -15,6 +14,17 @@ interface NewTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (taskName: string) => void;
+}
+
+function debounceFn<T extends (...args: any[]) => void>(
+  fn: T,
+  delayMs: number
+) {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delayMs);
+  };
 }
 
 // Main TaskManager Component
@@ -37,7 +47,8 @@ const TaskManager: React.FC = () => {
     );
   }, [tasks, searchTerm]);
 
-  const debouncedSearchTerm = useDebouncedCallback(setSearchTerm, 100);
+  // 替换原来的 useDebouncedCallback
+  const debouncedSearchTerm = debounceFn(setSearchTerm, 100);
 
   useEffect(() => {
     console.log(filteredTasks);
